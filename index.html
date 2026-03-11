@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      width: 100%;
+      max-width: 100vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0f;
+      font-family: 'Outfit', sans-serif;
+      color: #e4e4e7;
+      padding: 24px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 255, 136, 0.08), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0, 212, 255, 0.06), transparent),
+        radial-gradient(ellipse 50% 30% at 0% 80%, rgba(0, 255, 136, 0.05), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .game-wrapper {
+      position: relative;
+      z-index: 1;
+      width: fit-content;
+      max-width: calc(100vw - 48px);
+      margin: 0 auto;
+      background: linear-gradient(160deg, rgba(18, 18, 24, 0.95) 0%, rgba(12, 12, 16, 0.98) 100%);
+      border: 1px solid rgba(0, 255, 136, 0.15);
+      border-radius: 20px;
+      padding: 28px 32px 32px;
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.3) inset,
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 80px -20px rgba(0, 255, 136, 0.15);
+    }
+
+    .game-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #00ff88 0%, #00d4ff 50%, #00ff88 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 40px rgba(0, 255, 136, 0.3);
+    }
+
+    .no-time-limit {
+      font-size: 0.8rem;
+      color: #71717a;
+      margin-top: 6px;
+      font-weight: 400;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .score-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 255, 136, 0.08);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+    }
+
+    .score-pill .label {
+      color: #a1a1aa;
+    }
+
+    .score-pill .value {
+      color: #00ff88;
+      font-weight: 500;
+    }
+
+    .difficulty-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+
+    .difficulty-row > span {
+      color: #71717a;
+      margin-right: 4px;
+    }
+
+    .difficulty-row label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: #a1a1aa;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .difficulty-row label:hover {
+      color: #e4e4e7;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .difficulty-row input[type="radio"] {
+      accent-color: #00ff88;
+      width: 14px;
+      height: 14px;
+    }
+
+    .difficulty-row input:checked + span {
+      color: #00ff88;
+      font-weight: 600;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: fit-content;
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset, 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    #gameCanvas {
+      display: block;
+      background: #0b0b10;
+      border-radius: 12px;
+      vertical-align: top;
+    }
+
+    .controls {
+      margin-top: 18px;
+      font-size: 0.8rem;
+      color: #71717a;
+      text-align: center;
+    }
+
+    .controls kbd {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 6px;
+      color: #00ff88;
+      font-size: 0.75rem;
+      margin: 0 2px;
+    }
+
+    #startHint {
+      margin-top: 10px;
+      color: #00ff88;
+      font-weight: 500;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .game-over {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .game-over.visible {
+      display: flex;
+    }
+
+    .game-over .card {
+      background: linear-gradient(160deg, rgba(24, 24, 28, 0.98) 0%, rgba(16, 16, 20, 0.99) 100%);
+      border: 1px solid rgba(255, 107, 107, 0.25);
+      border-radius: 20px;
+      padding: 40px 48px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 60px -15px rgba(255, 107, 107, 0.2);
+    }
+
+    .game-over h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ff6b6b;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .game-over .sub {
+      font-size: 1rem;
+      color: #a1a1aa;
+      margin-bottom: 24px;
+    }
+
+    .game-over .sub .final {
+      color: #00ff88;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+    }
+
+    .game-over .game-over-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game-over .game-over-buttons button {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    }
+
+    .game-over .game-over-buttons button:hover {
+      transform: translateY(-2px);
+    }
+
+    .game-over .game-over-buttons button:active {
+      transform: translateY(0);
+    }
+
+    .game-over .btn-play-again {
+      background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+      border: none;
+      color: #0a0a0f;
+      box-shadow: 0 4px 14px rgba(0, 255, 136, 0.25);
+    }
+
+    .game-over .btn-play-again:hover {
+      box-shadow: 0 8px 24px rgba(0, 255, 136, 0.35);
+      filter: brightness(1.05);
+    }
+
+    .game-over .btn-change-difficulty {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0, 255, 136, 0.35);
+      color: #00ff88;
+    }
+
+    .game-over .btn-change-difficulty:hover {
+      background: rgba(0, 255, 136, 0.12);
+      box-shadow: 0 4px 16px rgba(0, 255, 136, 0.15);
+    }
+
+    .game-over .btn-back {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #a1a1aa;
+    }
+
+    .game-over .btn-back:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e4e4e7;
+    }
+
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 15;
+    }
+
+    .confirm-overlay.visible {
+      display: flex;
+    }
+
+    .confirm-card {
+      background: linear-gradient(160deg, rgba(24, 24, 28, 0.98) 0%, rgba(16, 16, 20, 0.99) 100%);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+      border-radius: 16px;
+      padding: 28px 32px;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .confirm-card h3 {
+      font-size: 1.1rem;
+      color: #e4e4e7;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .confirm-card p {
+      font-size: 0.9rem;
+      color: #a1a1aa;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .confirm-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .confirm-buttons button {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+
+    .confirm-buttons button:hover {
+      transform: translateY(-1px);
+    }
+
+    .confirm-buttons .btn-cancel {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e4e4e7;
+    }
+
+    .confirm-buttons .btn-confirm {
+      background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+      border: none;
+      color: #0a0a0f;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrapper">
+    <header class="game-header">
+      <h1>Snake</h1>
+      <p class="no-time-limit">No time limit — play until you hit yourself, walls, or obstacles (Hard)</p>
+    </header>
+
+    <div class="top-bar">
+      <div class="score-pill"><span class="label">Score</span><span class="value" id="score">0</span></div>
+      <div class="score-pill"><span class="label">Best</span><span class="value" id="highScore">0</span></div>
+      <div class="difficulty-row">
+        <span>Difficulty</span>
+        <label><input type="radio" name="difficulty" value="wrap" checked> <span>Easy (wrap)</span></label>
+        <label><input type="radio" name="difficulty" value="walls"> <span>Normal (walls)</span></label>
+        <label><input type="radio" name="difficulty" value="obstacles"> <span>Hard (obstacles)</span></label>
+      </div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="gameCanvas" width="400" height="400"></canvas>
+    </div>
+
+    <p class="controls">Use <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to move</p>
+    <p class="controls" id="startHint">Press any arrow key or W A S D to start</p>
+  </div>
+
+  <div class="game-over" id="gameOver">
+    <div class="card">
+      <h2>Game Over</h2>
+      <p class="sub">Score <span class="final" id="finalScore">0</span></p>
+      <div class="game-over-buttons">
+        <button type="button" id="restartBtn" class="btn-play-again">Play Again</button>
+        <button type="button" id="changeDifficultyBtn" class="btn-change-difficulty">Change difficulty</button>
+        <button type="button" id="backToMenuBtn" class="btn-back">Back to menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="difficultyConfirm">
+    <div class="confirm-card">
+      <h3>Change difficulty?</h3>
+      <p>This will end your current game. Your score will not be saved for this round.</p>
+      <div class="confirm-buttons">
+        <button type="button" class="btn-cancel" id="difficultyCancel">Cancel</button>
+        <button type="button" class="btn-confirm" id="difficultyConfirmOk">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Game settings ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gridSize = 20;
+    const tileCount = canvas.width / gridSize;
+
+    // --- State ---
+    let snake = [{ x: 10, y: 10 }];
+    let food = { x: 15, y: 15 };
+    let dx = 0;
+    let dy = 0;
+    let score = 0;
+    let highScore = localStorage.getItem('snakeHighScore') || 0;
+    let gameLoop = null;
+    let gameRunning = false;
+    let wallsMode = false;   // true = die on edge (Normal + Hard)
+    let obstaclesMode = false; // true = Hard: random obstacles
+    let obstacles = [];       // [{x,y}, ...] for Hard mode
+
+    document.getElementById('highScore').textContent = highScore;
+
+    function getDifficulty() {
+      return document.querySelector('input[name="difficulty"]:checked').value;
+    }
+
+    let lastDifficulty = 'wrap';
+
+    function setupDifficultyConfirm() {
+      const radios = document.querySelectorAll('input[name="difficulty"]');
+      const overlay = document.getElementById('difficultyConfirm');
+      const cancelBtn = document.getElementById('difficultyCancel');
+      const confirmBtn = document.getElementById('difficultyConfirmOk');
+      let pendingValue = null;
+
+      radios.forEach(radio => {
+        radio.addEventListener('click', function(e) {
+          if (!gameRunning) return;
+          const newValue = this.value;
+          if (newValue === lastDifficulty) return;
+          e.preventDefault();
+          pendingValue = newValue;
+          overlay.classList.add('visible');
+        });
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        document.querySelector(`input[name="difficulty"][value="${lastDifficulty}"]`).checked = true;
+        overlay.classList.remove('visible');
+        pendingValue = null;
+      });
+
+      confirmBtn.addEventListener('click', () => {
+        if (pendingValue !== null) {
+          document.querySelector(`input[name="difficulty"][value="${pendingValue}"]`).checked = true;
+          lastDifficulty = pendingValue;
+          pendingValue = null;
+          overlay.classList.remove('visible');
+          endGame();
+        }
+      });
+    }
+
+    function updateLastDifficulty() {
+      lastDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+    }
+
+    // --- Draw a single tile (rounded) ---
+    function drawTile(x, y, color) {
+      const pad = 1.5;
+      const size = gridSize - pad * 2;
+      const px = x * gridSize + pad;
+      const py = y * gridSize + pad;
+      const r = 4;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(px, py, size, size, r);
+      ctx.fill();
+    }
+
+    // --- Draw food with glow ---
+    function drawFood(x, y) {
+      const cx = x * gridSize + gridSize / 2;
+      const cy = y * gridSize + gridSize / 2;
+      const r = gridSize / 2 - 2;
+      ctx.shadowColor = '#ff6b6b';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#ff6b6b';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#ff8585';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function isBlocked(x, y) {
+      if (snake.some(seg => seg.x === x && seg.y === y)) return true;
+      if (obstacles.some(obs => obs.x === x && obs.y === y)) return true;
+      return false;
+    }
+
+    // --- Spawn food at random empty cell (not on snake or obstacles) ---
+    function spawnFood() {
+      let newFood;
+      do {
+        newFood = {
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount)
+        };
+      } while ( isBlocked(newFood.x, newFood.y) );
+      food = newFood;
+    }
+
+    // --- Spawn random obstacles for Hard mode (avoid snake start and food) ---
+    function spawnObstacles() {
+      obstacles = [];
+      const count = 12 + Math.floor(Math.random() * 10); // 12–21 obstacles
+      const startX = 10, startY = 10;
+      for (let i = 0; i < count; i++) {
+        let pos;
+        let tries = 0;
+        do {
+          pos = {
+            x: Math.floor(Math.random() * tileCount),
+            y: Math.floor(Math.random() * tileCount)
+          };
+          tries++;
+        } while (
+          (tries < 200) &&
+          (
+            (pos.x >= startX - 1 && pos.x <= startX + 1 && pos.y >= startY - 1 && pos.y <= startY + 1) ||
+            obstacles.some(o => o.x === pos.x && o.y === pos.y) ||
+            (pos.x === food.x && pos.y === food.y)
+          )
+        );
+        if (tries < 200) obstacles.push(pos);
+      }
+    }
+
+    // --- Main game update ---
+    function update() {
+      if (!gameRunning) return;
+
+      const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+      if (wallsMode) {
+        // Normal / Hard: die if snake hits the edge
+        if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+          endGame();
+          return;
+        }
+      } else {
+        // Easy: wrap around edges
+        head.x = (head.x + tileCount) % tileCount;
+        head.y = (head.y + tileCount) % tileCount;
+      }
+
+      // Hit obstacle? (Hard mode)
+      if (obstaclesMode && obstacles.some(obs => obs.x === head.x && obs.y === head.y)) {
+        endGame();
+        return;
+      }
+
+      // Hit self?
+      if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+        endGame();
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score += 10;
+        document.getElementById('score').textContent = score;
+        if (score > highScore) {
+          highScore = score;
+          document.getElementById('highScore').textContent = highScore;
+          localStorage.setItem('snakeHighScore', highScore);
+        }
+        spawnFood();
+      } else {
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    // --- Draw grid (subtle) ---
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= tileCount; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * gridSize, 0);
+        ctx.lineTo(i * gridSize, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i * gridSize);
+        ctx.lineTo(canvas.width, i * gridSize);
+        ctx.stroke();
+      }
+    }
+
+    // --- Draw everything ---
+    function draw() {
+      ctx.fillStyle = '#0b0b10';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+
+      // Obstacles (Hard mode)
+      obstacles.forEach(obs => drawTile(obs.x, obs.y, '#4a3a4a'));
+
+      // Food (with glow)
+      drawFood(food.x, food.y);
+
+      // Snake body (skip head, drawn next with glow)
+      for (let i = 1; i < snake.length; i++) {
+        const seg = snake[i];
+        const green = 0 + (255 - i * 10);
+        drawTile(seg.x, seg.y, `rgb(0, ${Math.max(80, green)}, 120)`);
+      }
+
+      // Snake head with glow
+      if (snake.length > 0) {
+        const h = snake[0];
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 14;
+        drawTile(h.x, h.y, '#00ff88');
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    // --- Start game ---
+    function startGame() {
+      updateLastDifficulty();
+      const diff = getDifficulty();
+      wallsMode = diff === 'walls' || diff === 'obstacles';
+      obstaclesMode = diff === 'obstacles';
+      snake = [{ x: 10, y: 10 }];
+      dx = 1;
+      dy = 0;
+      score = 0;
+      document.getElementById('score').textContent = '0';
+      obstacles = [];
+      spawnFood();
+      if (obstaclesMode) spawnObstacles();
+      gameRunning = true;
+      document.getElementById('gameOver').classList.remove('visible');
+      if (gameLoop) clearInterval(gameLoop);
+      gameLoop = setInterval(update, 120);
+    }
+
+    // --- End game ---
+    function endGame() {
+      gameRunning = false;
+      clearInterval(gameLoop);
+      document.getElementById('finalScore').textContent = score;
+      document.getElementById('gameOver').classList.add('visible');
+    }
+
+    // --- Back to menu (exit game over, choose difficulty, then press key to start) ---
+    function goToMenu() {
+      document.getElementById('gameOver').classList.remove('visible');
+      document.getElementById('startHint').style.display = '';
+      document.getElementById('startHint').textContent = 'Choose difficulty above, then press any arrow key or W A S D to start';
+    }
+
+    // --- Keyboard input ---
+    document.addEventListener('keydown', (e) => {
+      if (!gameRunning && e.key !== ' ') return;
+      switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          if (dy !== 1) { dx = 0; dy = -1; }
+          e.preventDefault();
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          if (dy !== -1) { dx = 0; dy = 1; }
+          e.preventDefault();
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          if (dx !== 1) { dx = -1; dy = 0; }
+          e.preventDefault();
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          if (dx !== -1) { dx = 1; dy = 0; }
+          e.preventDefault();
+          break;
+        case ' ':
+          if (!gameRunning) startGame();
+          e.preventDefault();
+          break;
+      }
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', startGame);
+    document.getElementById('changeDifficultyBtn').addEventListener('click', goToMenu);
+    document.getElementById('backToMenuBtn').addEventListener('click', goToMenu);
+    setupDifficultyConfirm();
+
+    // Initial draw and start on first key press
+    draw();
+    function onFirstKey(e) {
+      if (!gameRunning && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','w','a','s','d','W','A','S','D'].includes(e.key)) {
+        startGame();
+        document.getElementById('startHint').style.display = 'none';
+        document.removeEventListener('keydown', onFirstKey);
+      }
+    }
+    document.addEventListener('keydown', onFirstKey);
+  </script>
+</body>
+</html>
