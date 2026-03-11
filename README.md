@@ -2,7 +2,7 @@
 
 A classic Snake game built with HTML, CSS, and JavaScript. Play in your browser—no install required.
 
-**[▶️ Play the game](https://YOUR_USERNAME.github.io/snake-game/)** *(enable GitHub Pages first—see below)*
+**[▶️ Play the game](https://jonritzarnibal.github.io/snake-game/)** *(enable GitHub Pages first—see below)*
 
 ## Features
 
@@ -35,3 +35,4 @@ npx serve .
 ---
 
 *Perfect for learning the basics or adding to your portfolio.*
+
